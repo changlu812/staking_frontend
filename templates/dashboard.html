@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>控制面板 - X Login</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container" style="max-width: 500px;">
+        <div class="user-card">
+            {% if user.avatar %}
+                <img src="{{ user.avatar }}" alt="Avatar" class="avatar">
+            {% else %}
+                <div class="avatar" style="background: var(--surface); display: flex; align-items: center; justify-content: center; font-size: 2rem;">👤</div>
+            {% endif %}
+            <h1>控制面板</h1>
+            <p class="muted">登录成功。欢迎回到您的工作台。</p>
+        </div>
+
+        <div class="dashboard-grid">
+            <div class="info-item">
+                <span class="label">姓名</span>
+                <span class="value">{{ user.name }}</span>
+            </div>
+            <div class="info-item">
+                <span class="label">ID</span>
+                <span class="value">{{ user.id[:18] }}...</span>
+            </div>
+            {% if user.email %}
+            <div class="info-item">
+                <span class="label">电子邮箱</span>
+                <span class="value">{{ user.email }}</span>
+            </div>
+            {% endif %}
+        </div>
+
+        <div style="margin-top: 2rem;">
+            <a href="{{ url_for('logout') }}" class="btn-secondary">安全退出</a>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>X Login with Supabase</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <span class="logo">𝕏</span>
+        <h1>欢迎回来</h1>
+        <p class="muted">使用您的 X 账号快速安全地登录您的账户。</p>
+        
+        {% if user %}
+            <div class="user-card">
+                <p>您已登录为: <strong>{{ user.name }}</strong></p>
+                <a href="{{ url_for('dashboard') }}" class="btn-twitter">进入控制面板</a>
+                <a href="{{ url_for('logout') }}" class="btn-secondary">注销</a>
+            </div>
+        {% else %}
+            <a href="{{ url_for('login_twitter') }}" class="btn-twitter">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932 6.064-6.932zm-1.294 19.497h2.039L6.486 3.24H4.298l13.31 17.41z"/>
+                </svg>
+                使用 X 登录
+            </a>
+        {% endif %}
+    </div>
+</body>
+</html>
