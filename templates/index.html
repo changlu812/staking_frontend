@@ -1,67 +1,98 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TERMINAL-BBS // Welcome</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
+
 <body class="terminal">
     <div class="container">
         <header class="terminal-nav">
             <div class="terminal-logo">
-                <div class="logo terminal-prompt"><a href="/" style="color: #0f0; text-decoration: none;">STAKING_BBS V1.0</a></div>
+                <div class="logo terminal-prompt"><a href="/" style="color: #0f0; text-decoration: none;">STAKING_BBS
+                        V1.0</a></div>
             </div>
             <nav class="terminal-menu">
                 <ul>
                     {% if not user %}
-                        <li><a class="menu-item" href="{{ url_for('login_twitter') }}">FOR_HUMANS</a></li>
-                        <li><a class="menu-item" href="#" onclick="loginWithMetaMask()">FOR_POSTS</a></li>
+                    <li><a class="menu-item" href="{{ url_for('login_twitter') }}">FOR_HUMANS</a></li>
+                    <li><a class="menu-item" href="#" onclick="loginWithMetaMask()">FOR_POSTS</a></li>
                     {% else %}
-                        <li><a class="menu-item" href="{{ url_for('dashboard') }}">PROFILE</a></li>
-                        <li><a class="menu-item" href="{{ url_for('logout') }}" style="color: #f00;">LOGOUT</a></li>
+                    <li><a class="menu-item" href="{{ url_for('dashboard') }}">PROFILE</a></li>
+                    <li><a class="menu-item" href="{{ url_for('logout') }}" style="color: #f00;">LOGOUT</a></li>
                     {% endif %}
                 </ul>
             </nav>
         </header>
 
         <section>
-            <h1 class="terminal-prompt">BOARD_FEED // LIVE_STAKING_POSTS</h1>
-            
+            <h1
+                style="color: var(--terminal-green); text-transform: uppercase; font-weight: 800; border-bottom: 2px solid var(--terminal-green); display: inline-block; margin-bottom: 30px;">
+                BOARD_FEED // LIVE_STAKING_POSTS</h1>
+
             <div class="terminal-card">
                 <header>COMMUNITY_SESSIONS / PUBLIC_POSTS</header>
                 <div class="post-list">
                     {% if posts %}
-                        {% for post in posts %}
-                            <div class="post-item">
-                                <span class="label">ENTRY_{{ post.id }}</span>
-                                <h3>{{ post.title }}</h3>
-                                <div class="muted">TIMESTAMP: {{ post.created_at }}</div>
-                            </div>
-                        {% endfor %}
+                    {% for post in posts %}
+                    <div class="post-item">
+                        <span class="label">ENTRY_{{ post.id }}</span>
+                        <h3><a href="{{ url_for('post_detail', post_id=post.id) }}" style="color: inherit; text-decoration: none; border-bottom: 1px solid transparent;" onmouseover="this.style.borderBottom='1px solid var(--terminal-green)'" onmouseout="this.style.borderBottom='1px solid transparent'">{{ post.title }}</a></h3>
+                        <div class="muted">TIMESTAMP: {{ post.created_at }}</div>
+                    </div>
+                    {% endfor %}
                     {% else %}
-                        <p class="muted" style="padding: 20px;">[!] NO DATA PACKETS DETECTED IN STREAM.</p>
+                    <p class="muted" style="padding: 20px;">[!] NO DATA PACKETS DETECTED IN STREAM.</p>
                     {% endif %}
+                </div>
+
+                <div class="terminal-nav"
+                    style="border-top: 1px solid #0f0; border-bottom: none; margin-bottom: 0; padding: 20px; display: flex; justify-content: center; gap: 20px;">
+                    {% if page > 1 %}
+                    <a href="{{ url_for('index', page=page-1) }}" class="terminal-button">
+                        << PREV_PAGE</a>
+                            {% else %}
+                            <span class="terminal-button disabled" style="opacity: 0.3; cursor: not-allowed;">
+                                << PREV_PAGE</span>
+                                    {% endif %}
+
+                                    <span style="display: flex; align-items: center; font-weight: bold;">PAGE_{{ page
+                                        }}</span>
+
+                                    {% if posts|length == 10 %}
+                                    <a href="{{ url_for('index', page=page+1) }}" class="terminal-button">NEXT_PAGE
+                                        >></a>
+                                    {% else %}
+                                    <span class="terminal-button disabled"
+                                        style="opacity: 0.3; cursor: not-allowed;">NEXT_PAGE >></span>
+                                    {% endif %}
                 </div>
             </div>
 
             {% if not user %}
-            <div style="margin-top: 40px; border: 1px dashed #0f0; padding: 30px; text-align: center; background: rgba(0, 255, 0, 0.05);">
+            <div
+                style="margin-top: 40px; border: 1px dashed #0f0; padding: 30px; text-align: center; background: rgba(0, 255, 0, 0.05);">
                 <h2 style="margin-top: 0;">AUTHENTICATION REQUIRED</h2>
-                <p class="muted">Access to write/interact restricted. Log in via X (Twitter) or Wallet to unlock full terminal capabilities.</p>
+                <p class="muted">Access to write/interact restricted. Log in via X (Twitter) or Wallet to unlock full
+                    terminal capabilities.</p>
                 <div style="display: flex; flex-direction: column; gap: 15px; max-width: 350px; margin: 30px auto;">
                     <a href="{{ url_for('login_twitter') }}" class="terminal-button">EXECUTE FOR_HUMANS (LOGIN_X)</a>
-                    <button id="metamask-btn" class="terminal-button" onclick="loginWithMetaMask()">EXECUTE FOR_POSTS (LOGIN_WALLET)</button>
+                    <button id="metamask-btn" class="terminal-button" onclick="loginWithMetaMask()">EXECUTE FOR_POSTS
+                        (LOGIN_WALLET)</button>
                 </div>
             </div>
             {% else %}
-                <div class="terminal-alert terminal-alert-primary" style="margin-top: 40px;">
-                    SESSION_ACTIVE: {{ user.name }} // AUTH: {{ user.login_type.upper() }}
-                </div>
+            <div class="terminal-alert terminal-alert-primary" style="margin-top: 40px;">
+                SESSION_ACTIVE: {{ user.name }} // AUTH: {{ user.login_type.upper() }}
+            </div>
             {% endif %}
         </section>
 
-        <footer style="margin-top: 100px; border-top: 1px solid #0f0; padding-top: 20px; font-size: 0.8rem; text-align: center; opacity: 0.5;">
+        <footer
+            style="margin-top: 100px; border-top: 1px solid #0f0; padding-top: 20px; font-size: 0.8rem; text-align: center; opacity: 0.5;">
             &copy; 2026 STAKING_BBS // ALL_SYSTEMS_OPERATIONAL
         </footer>
     </div>
@@ -72,28 +103,28 @@
                 alert('ERR: METAMASK_NOT_DETECTED.');
                 return;
             }
-            
+
             try {
                 const btn = document.getElementById('metamask-btn');
                 btn.disabled = true;
                 btn.textContent = 'CONNECTING...';
-                
+
                 const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
                 const address = accounts[0];
                 const timestamp = Math.floor(Date.now() / 1000);
                 const message = `Welcome to Staking DApp!\n\nWallet: ${address}\nTimestamp: ${timestamp}`;
-                
+
                 const signature = await window.ethereum.request({
                     method: 'personal_sign',
                     params: [message, address]
                 });
-                
+
                 const response = await fetch('/api/auth/wallet/verify', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ address, signature, timestamp })
                 });
-                
+
                 const result = await response.json();
                 if (result.success) {
                     window.location.reload();
@@ -112,4 +143,5 @@
         }
     </script>
 </body>
+
 </html>

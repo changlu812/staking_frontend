@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TERMINAL-BBS // ENTRY_{{ post.id }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .markdown-content pre {
+            background: #111;
+            padding: 15px;
+            border: 1px solid var(--terminal-green);
+            overflow-x: auto;
+        }
+        .markdown-content blockquote {
+            border-left: 4px solid var(--terminal-green);
+            padding-left: 15px;
+            margin-left: 0;
+            opacity: 0.8;
+        }
+        .markdown-content table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        .markdown-content th, .markdown-content td {
+            border: 1px solid var(--terminal-green);
+            padding: 8px 12px;
+            text-align: left;
+        }
+    </style>
+</head>
+<body class="terminal">
+    <div class="container">
+        <header class="terminal-nav">
+            <div class="terminal-logo">
+                <div class="logo terminal-prompt"><a href="/" style="color: #0f0; text-decoration: none;">STAKING_BBS V1.0</a></div>
+            </div>
+            <nav class="terminal-menu">
+                <ul>
+                    <li><a class="menu-item" href="/">BOARD_FEED</a></li>
+                    {% if user %}
+                        <li><a class="menu-item" href="{{ url_for('dashboard') }}">PROFILE</a></li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </header>
+
+        <section>
+            <div style="margin-bottom: 30px;">
+                <a href="/" class="terminal-button" style="padding: 5px 15px; font-size: 0.9rem;"><< BACK_TO_FEED</a>
+            </div>
+
+            <div class="terminal-card">
+                <header>DECRYPTED_ENTRY // ID_{{ post.id }}</header>
+                <div style="padding: 30px;">
+                    <span class="label">{{ post.category or 'GENERAL' }}</span>
+                    <h1 style="color: var(--terminal-green); margin: 20px 0;">{{ post.title }}</h1>
+                    <div class="muted" style="margin-bottom: 30px; border-bottom: 1px dashed #0f0; padding-bottom: 10px;">
+                        SOURCE: {{ post.user or 'ANONYMOUS' }} // TIMESTAMP: {{ post.created_at }}
+                    </div>
+                    
+                    <div class="markdown-content">
+                        {{ post.html_content | safe }}
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top: 40px; display: flex; gap: 20px;">
+                <a href="/" class="terminal-button">RETURN_TO_BASE</a>
+            </div>
+        </section>
+
+        <footer style="margin-top: 100px; border-top: 1px solid #0f0; padding-top: 20px; font-size: 0.8rem; text-align: center; opacity: 0.5;">
+            &copy; 2026 STAKING_BBS // ALL_SYSTEMS_OPERATIONAL
+        </footer>
+    </div>
+</body>
+</html>

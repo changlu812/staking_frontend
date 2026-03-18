@@ -1,6 +1,7 @@
 import os
 import logging
 import time
+import markdown
 from flask import Flask, redirect, request, render_template, session, url_for, jsonify
 from supabase import create_client, Client
 from supabase.lib.client_options import SyncClientOptions
@@ -102,27 +103,55 @@ def verify_wallet():
 def index():
     user = session.get("user")
     
-    # Session validation: ensure session user has an id to prevent template errors
-    if user and "id" not in user:
+    # Session validation: ensure session user has all required fields to prevent template errors
+    if user and ("id" not in user or "login_type" not in user):
         session.pop("user", None)
         user = None
         
+    # Pagination logic
+    page = request.args.get("page", 1, type=int)
+    page_size = 10
+    offset = (page - 1) * page_size
+    
     posts = []
     if supabase:
         try:
-            # Execute the specified query: select * from public.staking_posts where live = true order by id desc limit 1 offset 1;
+            # Execute the specified query with limit and calculated offset
             response = supabase.table("staking_posts") \
                 .select("*") \
                 .order("id", desc=True) \
-                .limit(10) \
-                .offset(0) \
+                .limit(page_size) \
+                .offset(offset) \
                 .execute()
             posts = response.data
-            print(posts)
         except Exception as e:
             logger.error(f"Error fetching posts: {str(e)}")
             
-    return render_template("index.html", user=user, posts=posts)
+    return render_template("index.html", user=user, posts=posts, page=page)
+
+@app.route("/post/<int:post_id>")
+def post_detail(post_id):
+    user = session.get("user")
+    post = None
+    if supabase:
+        try:
+            response = supabase.table("staking_posts") \
+                .select("*") \
+                .eq("id", post_id) \
+                .single() \
+                .execute()
+            post = response.data
+            
+            # Render markdown
+            if post and post.get("content"):
+                post["html_content"] = markdown.markdown(post["content"], extensions=['fenced_code', 'tables'])
+        except Exception as e:
+            logger.error(f"Error fetching post {post_id}: {str(e)}")
+            
+    if not post:
+        return "DECRYPT_ERROR: DATA_PACKET_NOT_FOUND", 404
+        
+    return render_template("post_detail.html", user=user, post=post)
 
 @app.route("/login/twitter")
 def login_twitter():
@@ -195,7 +224,7 @@ def auth_callback():
 @app.route("/dashboard")
 def dashboard():
     user = session.get("user")
-    if not user or "id" not in user:
+    if not user or "id" not in user or "login_type" not in user:
         session.pop("user", None)
         return redirect(url_for("index"))
     return render_template("dashboard.html", user=user)
