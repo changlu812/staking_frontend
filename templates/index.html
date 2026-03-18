@@ -26,26 +26,43 @@
                     <span class="label">已登录用户</span>
                     <span class="value">{{ user.name }}</span>
                 </div>
-                <div style="display: flex; flex-direction: column; width: 100%; gap: 10px;">
-                    <a href="{{ url_for('dashboard') }}" class="btn-twitter" style="background: var(--primary); color: white;">
-                        进入控制面板
-                    </a>
-                    <a href="{{ url_for('logout') }}" class="btn-secondary">安全退出</a>
-                </div>
             </div>
-        {% else %}
-            <div style="display: flex; flex-direction: column; gap: 15px;">
+        {% endif %}
+
+        <div class="forum-list" style="margin-top: 30px; text-align: left;">
+            <h2 style="font-size: 1.2rem; margin-bottom: 15px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;">社区动态</h2>
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+                {% if posts %}
+                    {% for post in posts %}
+                        <div class="info-item post-item">
+                            <span class="label">#{{ post.id }}</span>
+                            <span class="value" style="display: block; margin-bottom: 4px;">{{ post.title }}</span>
+                            <span class="muted" style="font-size: 0.85rem; margin-bottom: 0;">{{ post.created_at }}</span>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="muted">暂无帖子分享。</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <div style="margin-top: 30px; border-top: 1px solid var(--glass-border); padding-top: 20px;">
+            {% if not user %}
                 <a href="{{ url_for('login_twitter') }}" class="btn-twitter">
                     <svg viewBox="0 0 24 24" fill="currentColor">
                         <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231 5.451-6.231zm-1.161 17.52h1.833L7.084 4.126H5.117L17.083 19.77z"></path>
                     </svg>
                     使用 𝕏 登录
                 </a>
-                <p style="color: var(--text-muted); font-size: 0.8rem; margin-top: 10px;">
-                    通过 OAuth 2.0 PKCE 安全验证
-                </p>
-            </div>
-        {% endif %}
+            {% else %}
+                <div style="display: flex; gap: 10px;">
+                    <a href="{{ url_for('dashboard') }}" class="btn-twitter" style="background: var(--primary); color: white; width: 60%;">
+                        个人主页
+                    </a>
+                    <a href="{{ url_for('logout') }}" class="btn-secondary" style="margin-top: 0; width: 40%;">退出</a>
+                </div>
+            {% endif %}
+        </div>
     </div>
 </body>
 </html>

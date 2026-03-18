@@ -16,7 +16,8 @@ app.secret_key = os.getenv("SECRET_KEY", "your-secret-key-at-least-32-chars")
 
 # Supabase configuration
 SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_KEY = os.getenv("SUPABASE_ANON_KEY")
+# SUPABASE_KEY = os.getenv("SUPABASE_ANON_KEY")
+SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
 
 if not SUPABASE_URL or not SUPABASE_KEY:
     logger.error("❌ CRITICAL: Missing SUPABASE_URL or SUPABASE_ANON_KEY in .env")
@@ -31,7 +32,22 @@ except Exception as e:
 @app.route("/")
 def index():
     user = session.get("user")
-    return render_template("index.html", user=user)
+    posts = []
+    if supabase:
+        try:
+            # Execute the specified query: select * from public.staking_posts where live = true order by id desc limit 1 offset 1;
+            response = supabase.table("staking_posts") \
+                .select("*") \
+                .order("id", desc=True) \
+                .limit(10) \
+                .offset(0) \
+                .execute()
+            posts = response.data
+            print(posts)
+        except Exception as e:
+            logger.error(f"Error fetching posts: {str(e)}")
+            
+    return render_template("index.html", user=user, posts=posts)
 
 @app.route("/login/twitter")
 def login_twitter():
