@@ -216,7 +216,7 @@ def auth_callback():
         }
         
         logger.info(f"User {session['user']['name']} successfully logged in.")
-        return redirect(url_for("dashboard"))
+        return redirect(url_for("index"))
     except Exception as e:
         logger.error(f"Failed to exchange code for session: {str(e)}")
         return f"Authentication failed during session exchange: {str(e)}", 401
