@@ -314,7 +314,21 @@ def dashboard():
     if not user or "id" not in user or "login_type" not in user:
         session.pop("user", None)
         return redirect(url_for("index"))
-    return render_template("dashboard.html", user=user)
+    
+    user_posts = []
+    if supabase:
+        try:
+            response = supabase.table("staking_posts") \
+                .select("*") \
+                .eq("user", user["id"]) \
+                .order("id", desc=True) \
+                .execute()
+            user_posts = response.data
+        except Exception as e:
+            logger.error(f"Error fetching user posts: {str(e)}")
+
+    return render_template("dashboard.html", user=user, posts=user_posts)
+
 
 @app.route("/logout")
 def logout():
