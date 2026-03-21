@@ -54,6 +54,18 @@
         </header>
 
         <section>
+            {% if not post.live and user.id != post.user and user.id != post.author_id %}
+            <div class="terminal-card" style="border-color: #555 !important;">
+                <header style="background: #555 !important; color: #fff !important;">DECOMMISSIONED_ENTRY // ACCESS_RESTRICTED</header>
+                <div style="padding: 50px; text-align: center;">
+                    <h1 style="color: #888; text-shadow: 0 0 5px #555; font-size: 2rem;">DECRYPT_FAIL: TRANSMISSION_OFFLINE</h1>
+                    <p class="muted" style="margin-top: 20px;">The requested data packet has been retracted by the source or the staking reserve has been relinquished.</p>
+                    <div style="margin-top: 40px;">
+                        <a href="/" class="terminal-button">RETURN_TO_BASE</a>
+                    </div>
+                </div>
+            </div>
+            {% else %}
             <div style="margin-bottom: 30px;">
                 <a href="/" class="terminal-button" style="padding: 5px 15px; font-size: 0.9rem;">
                     << BACK_TO_FEED</a>
@@ -62,14 +74,26 @@
             <div class="terminal-card">
                 <header>DECRYPTED_ENTRY // ID_{{ post.id }}</header>
                 <div style="padding: 30px;">
-                    <span class="label">{{ post.category or 'GENERAL' }}</span>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span class="label">{{ post.category or 'GENERAL' }}</span>
+                        {% if not post.live %}
+                        <span class="label" style="background: #555; color: #fff; font-size: 0.7rem; border: none; opacity: 0.8;">OFFLINE</span>
+                        {% endif %}
+                    </div>
+                    
                     <h1 style="color: var(--terminal-green); margin: 20px 0;">{{ post.title }}</h1>
                     <div class="muted"
                         style="margin-bottom: 30px; border-bottom: 1px dashed #0f0; padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
-                        <div>SOURCE: {{ post.user or 'ANONYMOUS' }} // TIMESTAMP: {{ post.created_at }}</div>
-                        {% if user and user.id == post.user %}
-                        <a href="{{ url_for('edit_post', post_id=post.id) }}" class="terminal-button"
-                            style="padding: 2px 10px; font-size: 0.8rem; border-color: var(--terminal-green);">EDIT_ENTRY</a>
+                        <div>SOURCE: {{ post.author_name or 'ANONYMOUS' }} // TIMESTAMP: {{ post.created_at }}</div>
+                        {% if user and (user.id == post.user or user.id == post.author_id) %}
+                        <div style="display: flex; gap: 10px;">
+                            {% if not post.live %}
+                            <button onclick="makeLive('{{ post.id }}')" class="terminal-button"
+                                style="padding: 2px 10px; font-size: 0.8rem; border-color: #ff0 !important; color: #ff0 !important;">MAKE_LIVE</button>
+                            {% endif %}
+                            <a href="{{ url_for('edit_post', post_id=post.id) }}" class="terminal-button"
+                                style="padding: 2px 10px; font-size: 0.8rem; border-color: var(--terminal-green);">EDIT_ENTRY</a>
+                        </div>
                         {% endif %}
                     </div>
 
@@ -78,11 +102,38 @@
                     </div>
                 </div>
             </div>
+            {% endif %}
 
             <div style="margin-top: 40px; display: flex; gap: 20px;">
                 <a href="/" class="terminal-button">RETURN_TO_BASE</a>
             </div>
         </section>
+
+        <script>
+            const makeLive = async (postId) => {
+                try {
+                    const response = await fetch(`/post/${postId}/live`, {
+                        method: 'POST'
+                    });
+    
+                    if (response.status === 402) {
+                        alert('STAKING_REQUIRED: YOU_MUST_PROVIDE_A_RESERVE_TO_ACTIVATE_TRANSMISSIONS.');
+                        window.location.href = '/stake';
+                        return;
+                    }
+    
+                    const result = await response.json();
+                    if (result.success) {
+                        window.location.reload();
+                    } else {
+                        alert(`ERR: ACTIVATION_FAILED (${result.error || 'UNKNOWN'})`);
+                    }
+                } catch (err) {
+                    console.error(err);
+                    alert('ERR: NETWORK_ERROR_DURING_ACTIVATION');
+                }
+            };
+        </script>
 
         <footer
             style="margin-top: 100px; border-top: 1px solid #0f0; padding-top: 20px; font-size: 0.8rem; text-align: center; opacity: 0.5;">

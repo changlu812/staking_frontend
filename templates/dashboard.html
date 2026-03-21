@@ -45,20 +45,80 @@
                             user.login_type.upper() }}</span></li>
                 </ul>
             </div>
+
+            {% if user.login_type == 'wallet' %}
+            <div class="terminal-card" style="margin-top: 40px; border-color: #ff0 !important;">
+                <header style="background: #ff0 !important; color: #000 !important;">STAKING_RESERVE // MONITOR</header>
+                <div style="padding: 20px;">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <div>
+                            <span class="label" style="background: #ff0;">STATUS:</span>
+                            {% if user.is_staked %}
+                            <span id="active-reserve-text" style="color: #ff0; font-weight: bold;">ACTIVE_RESERVE (10.00
+                                USDC)</span>
+                            {% else %}
+                            <span style="opacity: 0.5;">INACTIVE // STAKE_REQUIRED_FOR_LIVE_FEED</span>
+                            {% endif %}
+                        </div>
+                        {% if user.is_staked %}
+                        <button onclick="withdrawReserve()" class="terminal-button"
+                            style="border-color: #f00 !important; color: #f00 !important; padding: 5px 15px; font-size: 0.9rem;">WITHDRAW_RESERVE</button>
+                        {% else %}
+                        <a href="{{ url_for('stake') }}" class="terminal-button"
+                            style="padding: 5px 15px; font-size: 0.9rem;">INITIATE_STAKE</a>
+                        {% endif %}
+                    </div>
+                    <p class="muted" style="font-size: 0.8rem; margin: 0;">[!] NOTICE: Withdrawing your reserve will
+                        immediately de-broadcast all active transmissions from your ID.</p>
+                </div>
+            </div>
+            {% endif %}
             <div class="terminal-card" style="margin-top: 40px;">
                 <header>MY_TRANSMISSIONS // PRIVATE_FEED</header>
                 <div class="post-list">
                     {% if posts %}
                     {% for post in posts %}
-                    <a href="{{ url_for('post_detail', post_id=post.id) }}" style="text-decoration: none; color: inherit; display: block;">
-                        <div class="post-item">
-                            <span class="label">ENTRY_{{ post.id }}</span>
-                            <h3><span style="border-bottom: 1px solid transparent;"
-                                    onmouseover="this.style.borderBottom='1px solid var(--terminal-green)'"
-                                    onmouseout="this.style.borderBottom='1px solid transparent'">{{ post.title or '[UNTITLED_TRANSMISSION]' }}</span></h3>
-                            <div class="muted">TIMESTAMP: {{ post.created_at }}</div>
+                    <div class="post-row"
+                        style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed rgba(57, 255, 20, 0.3); transition: all 0.2s ease-in-out;"
+                        onmouseover="this.style.background='rgba(57,255,20,0.03)'"
+                        onmouseout="this.style.background='transparent'">
+
+                        <a href="{{ url_for('post_detail', post_id=post.id) }}"
+                            style="text-decoration: none; color: inherit; flex-grow: 1; display: block; border-right: 1px dashed rgba(57, 255, 20, 0.1);">
+                            <div class="post-item" style="border-bottom: none; padding: 1.5rem 0 1.5rem 20px;">
+                                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                                    <span class="label">ENTRY_{{ post.id }}</span>
+                                    {% if post.live %}
+                                    <span class="label"
+                                        style="background: var(--terminal-green); color: var(--terminal-black); font-size: 0.7rem;">LIVE</span>
+                                    {% else %}
+                                    <span class="label"
+                                        style="background: #555; color: #fff; font-size: 0.7rem; opacity: 0.5;">OFFLINE</span>
+                                    {% endif %}
+                                </div>
+                                <h3 style="margin: 0 !important; font-size: 1.4rem;">
+                                    <span style="border-bottom: 1px solid transparent;"
+                                        onmouseover="this.style.borderBottom='1px solid var(--terminal-green)'"
+                                        onmouseout="this.style.borderBottom='1px solid transparent'">{{ post.title or
+                                        '[UNTITLED_TRANSMISSION]' }}</span>
+                                </h3>
+                                <div class="muted" style="font-size: 0.75rem; margin-top: 5px;">TIMESTAMP: {{
+                                    post.created_at }}</div>
+                            </div>
+                        </a>
+
+                        <div style="padding: 0 20px;">
+                            <button onclick="withdrawReserve()" class="terminal-button tooltip-trigger"
+                                style="border-color: #f00 !important; color: #f00 !important; padding: 4px 12px; font-size: 0.7rem; white-space: nowrap;">
+                                WITHDRAW_RESERVE
+                            </button>
+                            <button onclick="makeLive('{{ post.id }}')" class="terminal-button"
+                                style="border-color: #ff0 !important; color: #ff0 !important; padding: 4px 12px; font-size: 0.7rem; white-space: nowrap;">
+                                MAKE_LIVE
+                            </button>
                         </div>
-                    </a>
+                    </div>
                     {% endfor %}
                     {% else %}
                     <p class="muted" style="padding: 20px;">[!] NO PERSONAL DATA CLOUDS DETECTED.</p>
@@ -96,6 +156,203 @@
             &copy; 2026 STAKING_BBS // ALL_RIGHTS_RESERVED
         </footer>
     </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
+    <script>
+        const STAKING_ADDR = "0x6623Af17C813252CDBE29d062817fd27Bd865c35";
+        const BASE_CHAIN_ID = "0x2105"; // 8453
+
+        let MIN_RESERVE_AMOUNT = 10000000n; // Default fallback: 10.00 USDC (6 decimals)
+        const STAKING_ABI = [
+            "function withdraw(uint256 amount)",
+            "function minDeposit() view returns (uint256)",
+            "function minStake() view returns (uint256)",
+            "function balanceOf(address account) view returns (uint256)",
+        ];
+
+        // Ensure user is on Base Chain
+        const ensureBaseChain = async () => {
+            if (typeof window.ethereum === 'undefined') return false;
+
+            try {
+                const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+                if (chainId === BASE_CHAIN_ID) return true;
+
+                try {
+                    await window.ethereum.request({
+                        method: 'wallet_switchEthereumChain',
+                        params: [{ chainId: BASE_CHAIN_ID }],
+                    });
+                    return true;
+                } catch (switchError) {
+                    if (switchError.code === 4902) {
+                        try {
+                            await window.ethereum.request({
+                                method: 'wallet_addEthereumChain',
+                                params: [{
+                                    chainId: BASE_CHAIN_ID,
+                                    chainName: 'Base Mainnet',
+                                    nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
+                                    rpcUrls: ['https://mainnet.base.org'],
+                                    blockExplorerUrls: ['https://basescan.org']
+                                }],
+                            });
+                            return true;
+                        } catch (addError) {
+                            console.error('Failed to add Base network:', addError);
+                            return false;
+                        }
+                    }
+                    console.error('Failed to switch to Base chain:', switchError);
+                    return false;
+                }
+            } catch (err) {
+                console.error('Network check failed:', err);
+                return false;
+            }
+        };
+
+        // Fetch minDeposit to update UI
+        const fetchMinDeposit = async () => {
+            const RPC_URLS = ["https://mainnet.base.org", "https://sepolia.base.org"];
+
+            for (const rpc of RPC_URLS) {
+                try {
+                    const provider = new ethers.JsonRpcProvider(rpc);
+                    const stakingContract = new ethers.Contract(STAKING_ADDR, STAKING_ABI, provider);
+                    const min = await trySelectMin(stakingContract);
+                    if (min) {
+                        updateDashboardUI(min);
+                        return;
+                    }
+                } catch (err) {
+                    console.warn(`RPC ${rpc} failed or contract not found there.`);
+                }
+            }
+
+            if (typeof window.ethereum === 'undefined') return;
+            try {
+                const provider = new ethers.BrowserProvider(window.ethereum);
+                const stakingContract = new ethers.Contract(STAKING_ADDR, STAKING_ABI, provider);
+                const min = await trySelectMin(stakingContract);
+                if (min) updateDashboardUI(min);
+            } catch (err) {
+                console.error('All providers failed to fetch minDeposit. Using fallback amount.', err);
+            }
+        };
+
+        const trySelectMin = async (contract) => {
+            const selectors = ['minDeposit', 'MIN_DEPOSIT', 'minimumDeposit', 'minStake', 'minAmount'];
+            for (const fn of selectors) {
+                try {
+                    return await contract[fn]();
+                } catch (err) {
+                    continue;
+                }
+            }
+            return null;
+        };
+
+        const updateDashboardUI = (min) => {
+            MIN_RESERVE_AMOUNT = min;
+            const humanReadable = (Number(min) / 1000000).toFixed(2);
+            const el = document.getElementById('active-reserve-text');
+            // If the user is currently staked, this will be replaced by their actual balance in the next check
+        };
+
+        const getUserStakedBalance = async (signerAddress, contract) => {
+            const selectors = ['balanceOf', 'deposits', 'stakedAmount'];
+            for (const fn of selectors) {
+                try {
+                    return await contract[fn](signerAddress);
+                } catch (err) {
+                    continue;
+                }
+            }
+            return 0n;
+        };
+
+        window.addEventListener('load', fetchMinDeposit);
+
+        const makeLive = async (postId) => {
+            try {
+                const response = await fetch(`/post/${postId}/live`, {
+                    method: 'POST'
+                });
+
+                if (response.status === 402) {
+                    alert('STAKING_REQUIRED: YOU_MUST_PROVIDE_A_RESERVE_TO_ACTIVATE_TRANSMISSIONS.');
+                    window.location.href = '/stake';
+                    return;
+                }
+
+                const result = await response.json();
+                if (result.success) {
+                    window.location.reload();
+                } else {
+                    alert(`ERR: ACTIVATION_FAILED (${result.error || 'UNKNOWN'})`);
+                }
+            } catch (err) {
+                console.error(err);
+                alert('ERR: NETWORK_ERROR_DURING_ACTIVATION');
+            }
+        };
+
+        const withdrawReserve = async () => {
+            if (typeof window.ethereum === 'undefined') {
+                alert('ERR: METAMASK_NOT_DETECTED');
+                return;
+            }
+
+            try {
+                // 0. Ensure Base Chain
+                const isBase = await ensureBaseChain();
+                if (!isBase) {
+                    throw new Error('NETWORK_MISMATCH: PLEASE_SWITCH_TO_BASE_MAINNET');
+                }
+
+                const provider = new ethers.BrowserProvider(window.ethereum);
+                const signer = await provider.getSigner();
+                const signerAddress = await signer.getAddress();
+                const stakingContract = new ethers.Contract(STAKING_ADDR, STAKING_ABI, signer);
+
+                // 1. Query actual balance
+                console.log('Fetching user staked balance...');
+                const activeBalance = await getUserStakedBalance(signerAddress, stakingContract);
+
+                if (activeBalance <= 0n) {
+                    alert('ERR: ZERO_BALANCE_DETECTED_IN_PROTOCOL');
+                    return;
+                }
+
+                const humanReadable = (Number(activeBalance) / 1000000).toFixed(2);
+                if (!confirm(`STAKING_WITHDRAWAL_NOTICE: Confirming this action will IMMEDIATELY de-broadcast all your transmissions and return your ${humanReadable} USDC reserve from the protocol. CONTINUE?`)) {
+                    return;
+                }
+
+                console.log(`Initiating blockchain withdrawal for ${humanReadable} USDC...`);
+                const tx = await stakingContract.withdraw(activeBalance);
+                console.log(`TX_SENT: ${tx.hash}`);
+
+                await tx.wait();
+                console.log('TX_CONFIRMED');
+
+                // Now notify the backend to take posts offline
+                const response = await fetch('/unstake', {
+                    method: 'POST'
+                });
+                const result = await response.json();
+
+                if (result.success) {
+                    window.location.reload();
+                } else {
+                    alert(`ERR: BACKEND_UPDATE_FAILED (${result.error || 'UNKNOWN'})`);
+                }
+            } catch (err) {
+                console.error(err);
+                alert(`ERR: ${err.reason || err.message || 'TRANSACTION_FAILED'}`);
+            }
+        };
+    </script>
 </body>
 
 </html>

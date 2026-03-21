@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -16,6 +17,7 @@
             position: relative;
             overflow: hidden;
         }
+
         .staking-container::before {
             content: "";
             position: absolute;
@@ -27,31 +29,42 @@
             animation: scanline 2s linear infinite;
             opacity: 0.5;
         }
+
         @keyframes scanline {
-            0% { transform: translateY(0); }
-            100% { transform: translateY(400px); }
+            0% {
+                transform: translateY(0);
+            }
+
+            100% {
+                transform: translateY(400px);
+            }
         }
+
         .step-indicator {
             display: flex;
             justify-content: space-between;
             margin-bottom: 40px;
             font-weight: bold;
         }
+
         .step {
             opacity: 0.5;
         }
+
         .step.active {
             opacity: 1;
             color: var(--terminal-black);
             background: var(--terminal-green);
             padding: 2px 10px;
         }
+
         .usdc-amount {
             font-size: 3rem;
             text-align: center;
             margin: 30px 0;
             text-shadow: 0 0 10px var(--terminal-green);
         }
+
         .loading-bar {
             width: 100%;
             height: 10px;
@@ -59,6 +72,7 @@
             margin-top: 20px;
             display: none;
         }
+
         .loading-progress {
             height: 100%;
             background: var(--terminal-green);
@@ -66,11 +80,13 @@
         }
     </style>
 </head>
+
 <body class="terminal">
     <div class="container">
         <header class="terminal-nav">
             <div class="terminal-logo">
-                <div class="logo terminal-prompt"><a href="/" style="color: #0f0; text-decoration: none;">STAKING_BBS V1.0</a></div>
+                <div class="logo terminal-prompt"><a href="/" style="color: #0f0; text-decoration: none;">STAKING_BBS
+                        V1.0</a></div>
             </div>
         </header>
 
@@ -81,27 +97,44 @@
                     <span class="step">02_COMPOSE_POST</span>
                 </div>
 
-                <h2 class="terminal-prompt" style="font-size: 1.6rem; border-bottom: 1px dashed var(--terminal-green); padding-bottom: 10px; margin-bottom: 30px; text-shadow: 0 0 5px var(--terminal-green);">REQUIRED_ACTION: STAKE_RESERVE</h2>
-                
-                <p style="color: var(--terminal-green); opacity: 0.8; font-size: 1rem;">To prevent spam and ensure quality, all wallet-based transmissions require a <span style="font-weight: bold; border-bottom: 1px solid var(--terminal-green);">minimum staking reserve of 10.00 USDC</span>.</p>
+                <h2 class="terminal-prompt"
+                    style="font-size: 1.6rem; border-bottom: 1px dashed var(--terminal-green); padding-bottom: 10px; margin-bottom: 30px; text-shadow: 0 0 5px var(--terminal-green);">
+                    REQUIRED_ACTION: STAKE_RESERVE</h2>
 
+                <p style="color: var(--terminal-green); opacity: 0.8; font-size: 1rem;">To prevent spam and ensure
+                    quality, all wallet-based transmissions require a <span id="display-amount-inline"
+                        style="font-weight: bold; border-bottom: 1px solid var(--terminal-green);">minimum staking
+                        reserve of 10.00 USDC</span>.</p>
 
-                
-                <div class="usdc-amount">10.00 USDC</div>
-                
+                <div class="stake-input-container" style="text-align: center; margin: 30px 0;">
+                    <span class="label" style="display: block; margin-bottom: 15px; opacity: 0.7;">SPECIFY_CUSTOM_RESERVE:</span>
+                    <div style="display: inline-flex; align-items: baseline; gap: 10px;">
+                        <input type="number" id="stake-input" class="terminal-input" step="0.01" value="10.00" 
+                               style="font-size: 3rem; width: 300px; text-align: center; background: rgba(0,255,0,0.05); border: 2px solid var(--terminal-green); color: var(--terminal-green); text-shadow: 0 0 10px var(--terminal-green); font-family: 'Courier New', Courier, monospace; outline: none;">
+                        <span style="font-size: 1.5rem; font-weight: bold;">USDC</span>
+                    </div>
+                    <div id="min-warning" class="muted" style="margin-top: 10px; font-size: 0.7rem; color: #f00; display: none;">ERR: BELOW_MINIMUM_REQUIREMENT</div>
+                </div>
+
                 <div style="text-align: center; margin-top: 30px;">
-                    <button id="stake-button" class="terminal-button" onclick="performStake()">INITIATE_STAKING_SEQUENCE</button>
+                    <button id="stake-button" class="terminal-button"
+                        onclick="performStake()">INITIATE_STAKING_SEQUENCE</button>
                     <p id="status-text" class="muted" style="margin-top: 15px;">WAITING_FOR_USER_CONFIRMATION...</p>
-                    
+
                     <div id="loading-bar" class="loading-bar">
                         <div id="loading-progress" class="loading-progress"></div>
                     </div>
                 </div>
 
-                <div style="margin-top: 40px; font-size: 0.8rem; border-top: 1px dashed var(--terminal-green); padding-top: 20px;">
-                    <span class="label">SECURITY_NOTICE</span>
-                    Funds are locked in the protocol vault to ensure transmission quality. 
-                    <strong>Staking is 100% refundable</strong> after your post has been live for 24 hours, meaning your communication is effectively <strong>FREE</strong>.
+                <div
+                    style="margin-top: 40px; font-size: 0.8rem; border-top: 1px dashed var(--terminal-green); padding-top: 20px; color: var(--terminal-green);">
+                    <span class="label">OPERATIONAL_FEEDBACK_LOOP</span>
+                    <p style="margin-top: 10px; opacity: 0.9;">Our objective is to ensure that terminal communications are
+                        high-relevance and self-maintained. We do not charge fees for broadcasting.</p>
+                    <p style="opacity: 0.9;"><strong style="color: #fff; text-shadow: 0 0 5px var(--terminal-green);">RESERVATION_MECHANISM:</strong> Your reserve remains yours. When your transmission
+                        objective has been met, you may <strong style="color: #fff;">WITHDRAW_FUNDS</strong> via the dashboard. At that
+                        moment, your transmissions will go <strong style="color: #f00; text-shadow: 0 0 5px #f00;">OFFLINE</strong> as the quality-guarantee reserve is
+                        relinquished. This keeps the network efficient and noise-free.</p>
                 </div>
 
             </div>
@@ -112,44 +145,174 @@
         </footer>
     </div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
     <script>
-        async function performStake() {
+        const STAKING_ADDR = "0x6623Af17C813252CDBE29d062817fd27Bd865c35";
+        const USDC_ADDR = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"; // Base USDC Address
+        const BASE_CHAIN_ID = "0x2105"; // 8453
+        
+        let MIN_STAKE_AMOUNT = 10000000n; // Default fallback: 10.00 USDC (6 decimals)
+
+        const USDC_ABI = ["function approve(address spender, uint256 amount) returns (bool)"];
+        const STAKING_ABI = [
+            "function deposit(uint256 amount)",
+            "function minDeposit() view returns (uint256)",
+        ];
+
+        // Ensure user is on Base Chain
+        const ensureBaseChain = async () => {
+            if (typeof window.ethereum === 'undefined') return false;
+
+            try {
+                const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+                if (chainId === BASE_CHAIN_ID) return true;
+
+                try {
+                    await window.ethereum.request({
+                        method: 'wallet_switchEthereumChain',
+                        params: [{ chainId: BASE_CHAIN_ID }],
+                    });
+                    return true;
+                } catch (switchError) {
+                    // This error code indicates that the chain has not been added to MetaMask.
+                    if (switchError.code === 4902) {
+                        try {
+                            await window.ethereum.request({
+                                method: 'wallet_addEthereumChain',
+                                params: [{
+                                    chainId: BASE_CHAIN_ID,
+                                    chainName: 'Base Mainnet',
+                                    nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
+                                    rpcUrls: ['https://mainnet.base.org'],
+                                    blockExplorerUrls: ['https://basescan.org']
+                                }],
+                            });
+                            return true;
+                        } catch (addError) {
+                            console.error('Failed to add Base network:', addError);
+                            return false;
+                        }
+                    }
+                    console.error('Failed to switch to Base chain:', switchError);
+                    return false;
+                }
+            } catch (err) {
+                console.error('Network check failed:', err);
+                return false;
+            }
+        };
+
+        // Fetch minDeposit on load
+        const fetchMinDeposit = async () => {
+            if (typeof window.ethereum === 'undefined') return;
+            const isBase = await ensureBaseChain();
+            if (!isBase) {
+                console.warn('NETWORK_MISMATCH: COULD_NOT_QUERY_CONTRACT');
+            }
+            try {
+                const provider = new ethers.BrowserProvider(window.ethereum);
+                const stakingContract = new ethers.Contract(STAKING_ADDR, STAKING_ABI, provider);
+                const min = await stakingContract.minDeposit();
+                updateStakingUI(min);
+            } catch (err) {
+                console.error('Failed to fetch minDeposit. Using fallback amount.', err);
+            }
+        };
+
+        const updateStakingUI = (min) => {
+            MIN_STAKE_AMOUNT = min;
+            const humanReadable = (Number(min) / 1000000).toFixed(2);
+            
+            const displayAmountInline = document.getElementById('display-amount-inline');
+            if (displayAmountInline) displayAmountInline.textContent = `${humanReadable} USDC`;
+            
+            const stakeInput = document.getElementById('stake-input');
+            if (stakeInput) {
+                stakeInput.min = humanReadable;
+                stakeInput.value = humanReadable;
+            }
+        };
+
+        window.addEventListener('load', fetchMinDeposit);
+
+        const performStake = async () => {
+            if (typeof window.ethereum === 'undefined') {
+                alert('ERR: METAMASK_NOT_DETECTED');
+                return;
+            }
+
             const btn = document.getElementById('stake-button');
             const status = document.getElementById('status-text');
             const loader = document.getElementById('loading-bar');
             const progress = document.getElementById('loading-progress');
-            
-            btn.disabled = true;
-            btn.textContent = 'EXECUTING...';
-            status.textContent = 'CONNECTING_TO_WALLET_CLIENT...';
-            loader.style.display = 'block';
+            const stakeInput = document.getElementById('stake-input');
+            const minWarning = document.getElementById('min-warning');
 
-            // Simulate blockchain transaction
-            let p = 0;
-            const interval = setInterval(() => {
-                p += Math.random() * 15;
-                if (p >= 100) {
-                    p = 100;
-                    clearInterval(interval);
-                    completeStaking();
+            // Amount Validation
+            const customValue = parseFloat(stakeInput.value);
+            const finalStakingUnits = BigInt(Math.floor(customValue * 1000000));
+            
+            if (finalStakingUnits < MIN_STAKE_AMOUNT) {
+                minWarning.style.display = 'block';
+                return;
+            }
+            minWarning.style.display = 'none';
+
+            try {
+                btn.disabled = true;
+                btn.textContent = 'EXECUTING...';
+                loader.style.display = 'block';
+                progress.style.width = '10%';
+
+                // 0. Ensure Base Chain
+                status.textContent = 'NETWORK_VERIFICATION: IN_PROGRESS...';
+                const isBase = await ensureBaseChain();
+                if (!isBase) {
+                    throw new Error('NETWORK_MISMATCH: PLEASE_SWITCH_TO_BASE_MAINNET');
                 }
-                progress.style.width = p + '%';
-                
-                if (p > 30) status.textContent = 'AWAITING_BLOCK_CONFIRMATION...';
-                if (p > 70) status.textContent = 'FINALIZING_LEDGER_UPDATE...';
-            }, 300);
-        }
 
-        async function completeStaking() {
+                const provider = new ethers.BrowserProvider(window.ethereum);
+                const signer = await provider.getSigner();
+
+                // 1. Approve USDC
+                status.textContent = 'TRANSACTION_AWAITING: USDC_APPROVAL...';
+                const usdcContract = new ethers.Contract(USDC_ADDR, USDC_ABI, signer);
+                const approveTx = await usdcContract.approve(STAKING_ADDR, finalStakingUnits);
+                progress.style.width = '30%';
+                status.textContent = 'TX_PENDING: AWAITING_APPROVAL_CONFIRMATION...';
+                await approveTx.wait();
+
+                // 2. Deposit/Stake
+                progress.style.width = '60%';
+                status.textContent = 'TRANSACTION_AWAITING: STAKING_DEPOSIT...';
+                const stakingContract = new ethers.Contract(STAKING_ADDR, STAKING_ABI, signer);
+                const depositTx = await stakingContract.deposit(finalStakingUnits);
+                progress.style.width = '80%';
+                status.textContent = 'TX_PENDING: AWAITING_DEPOSIT_CONFIRMATION...';
+                await depositTx.wait();
+
+                // 3. Finalize on backend
+                progress.style.width = '100%';
+                status.textContent = 'FINALIZING_LEDGER_STATE...';
+                await completeStaking();
+
+            } catch (err) {
+                console.error(err);
+                status.textContent = 'TRANSACTION_REJECTED_OR_FAILED';
+                btn.disabled = false;
+                btn.textContent = 'INITIATE_STAKING_SEQUENCE';
+                alert(`ERR: ${err.reason || err.message || 'TRANSACTION_FAILED'}`);
+            }
+        };
+
+        const completeStaking = async () => {
             const status = document.getElementById('status-text');
-            status.textContent = 'TX_SUCCESS: STAKE_CONFIRMED';
-            
             try {
                 const response = await fetch('/stake', {
                     method: 'POST'
                 });
                 const result = await response.json();
-                
+
                 if (result.success) {
                     status.innerHTML = '<span style="color: #fff;">STAKE_SUCCESS! REDIRECTING_TO_COMPOSER...</span>';
                     setTimeout(() => {
@@ -162,7 +325,8 @@
                 console.error(err);
                 alert('ERR: NETWORK_ERROR');
             }
-        }
+        };
     </script>
 </body>
+
 </html>

@@ -93,13 +93,45 @@
                         <textarea name="content" class="form-control" required>{{ post.content }}</textarea>
                     </div>
 
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 40px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 40px; gap: 20px;">
                         <a href="{{ url_for('post_detail', post_id=post.id) }}" class="muted" style="text-decoration: none; border-bottom: 1px solid transparent;" onmouseover="this.style.borderBottom='1px solid var(--terminal-green)'" onmouseout="this.style.borderBottom='1px solid transparent'">ABORT_RECONFIGURATION</a>
-                        <button type="submit" class="terminal-button">SAVE_CHANGES</button>
+                        <div style="display: flex; gap: 20px;">
+                            {% if not post.live %}
+                            <button type="button" onclick="makeLive('{{ post.id }}')" class="terminal-button" style="border-color: #ff0 !important; color: #ff0 !important;">MAKE_LIVE</button>
+                            {% endif %}
+                            <button type="submit" class="terminal-button">SAVE_CHANGES</button>
+                        </div>
                     </div>
                 </form>
             </div>
         </section>
+
+        <script>
+            const makeLive = async (postId) => {
+                try {
+                    const response = await fetch(`/post/${postId}/live`, {
+                        method: 'POST'
+                    });
+    
+                    if (response.status === 402) {
+                        alert('STAKING_REQUIRED: YOU_MUST_PROVIDE_A_RESERVE_TO_ACTIVATE_TRANSMISSIONS.');
+                        window.location.href = '/stake';
+                        return;
+                    }
+    
+                    const result = await response.json();
+                    if (result.success) {
+                        alert('TRANSMISSION_ACTIVATED: DATA_PACKET_IS_NOW_LIVE_ON_FEED.');
+                        window.location.reload();
+                    } else {
+                        alert(`ERR: ACTIVATION_FAILED (${result.error || 'UNKNOWN'})`);
+                    }
+                } catch (err) {
+                    console.error(err);
+                    alert('ERR: NETWORK_ERROR_DURING_ACTIVATION');
+                }
+            };
+        </script>
 
         <footer style="margin-top: 60px; text-align: center;">
             &copy; 2026 STAKING_BBS // ALL_SYSTEMS_OPERATIONAL

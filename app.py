@@ -119,6 +119,36 @@ def verify_wallet():
         return jsonify({"error": str(e)}), 500
 
 
+@app.route("/post/<int:post_id>/live", methods=["POST"])
+def make_post_live(post_id):
+    user = session.get("user")
+    if not user or user.get("login_type") != "wallet":
+        return jsonify({"error": "Unauthorized"}), 403
+    
+    # User must be staked to make a post live
+    if not user.get("is_staked"):
+        return jsonify({"error": "STAKE_REQUIRED"}), 402 # Using 402 for 'Payment Required' context
+        
+    if supabase:
+        try:
+            # Verify ownership
+            response = supabase.table("staking_posts").select("*").eq("id", post_id).single().execute()
+            post = response.data
+            if not post:
+                return jsonify({"error": "POST_NOT_FOUND"}), 404
+                
+            if post.get("user") != user["id"] and post.get("author_id") != user["id"]:
+                return jsonify({"error": "UNAUTHORIZED_ACCESS"}), 403
+                
+            supabase.table("staking_posts").update({"live": True}).eq("id", post_id).execute()
+            return jsonify({"success": True})
+        except Exception as e:
+            logger.error(f"Error making post {post_id} live: {str(e)}")
+            return jsonify({"error": str(e)}), 500
+            
+    return jsonify({"success": True})
+
+
 @app.route("/stake", methods=["GET", "POST"])
 def stake():
     user = session.get("user")
@@ -142,6 +172,7 @@ def stake():
         return jsonify({"success": True})
 
     return render_template("stake.html", user=user)
+
 
 @app.route("/post/<int:post_id>/edit", methods=["GET", "POST"])
 def edit_post(post_id):
@@ -219,7 +250,8 @@ def new_post():
                     "content": content,
                     "user": user.get("id"),
                     "author_id": user.get("id"),
-                    "author_name": user.get("name")
+                    "author_name": user.get("name"),
+                    "live": True
                 }).execute()
                 return redirect(url_for("index"))
             except Exception as e:
