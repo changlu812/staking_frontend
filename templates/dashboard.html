@@ -66,13 +66,15 @@
                         <div>
                             <span class="label" style="background: #ff0;">STATUS:</span>
                             {% if user.is_staked %}
-                            <span id="active-reserve-text" style="color: #ff0; font-weight: bold;">COMMITMENT_ACTIVE ({{ user.stake_amount }} USDC RESERVED)</span>
+                            <span id="active-reserve-text" style="color: #ff0; font-weight: bold;">COMMITMENT_ACTIVE (ON-CHAIN CHECK PENDING...)</span>
                             {% else %}
                             <span style="opacity: 0.5;">NO_ACTIVE_COMMITMENT // STAKE_TO_POST</span>
                             {% endif %}
                         </div>
                         {% if user.is_staked %}
-                        <button onclick="withdrawReserve()" class="terminal-button"
+                        <button onclick="withdrawReserve('{{ first_staking_id }}')" class="terminal-button"
+                            {% if not first_staking_id %}disabled{% endif %}
+                            title="{% if not first_staking_id %}No staking id is linked to this account yet.{% endif %}"
                             style="border-color: #f00 !important; color: #f00 !important; padding: 5px 15px; font-size: 0.9rem;">COMPLETE & WITHDRAW</button>
                         {% else %}
                         <a href="{{ url_for('stake') }}" class="terminal-button"
@@ -100,7 +102,7 @@
                                     <span class="label">ENTRY_{{ post.id }}</span>
                                     <span class="label"
                                         style="background: rgba(57, 255, 20, 0.1); color: var(--terminal-green); border: 1px solid rgba(57,255,20,0.3);">
-                                        {{ post.staking }}</span>
+                                        {{ post.staking_label }}</span>
                                     {% if post.live %}
                                     <span class="label"
                                         style="background: var(--terminal-green); color: var(--terminal-black); font-size: 0.7rem;">ACTIVE</span>
@@ -121,8 +123,9 @@
                         </a>
 
                         <div style="display: flex; gap: 10px; padding: 0 20px;">
-                            <button onclick="withdrawReserve({{ post.staking.split(':')[1] }})"
+                            <button onclick="withdrawReserve('{{ post.staking_id }}')"
                                 class=" terminal-button tooltip-trigger"
+                                {% if not post.staking_id %}disabled{% endif %}
                                 style="border-color: #f00 !important; color: #f00 !important; padding: 4px 12px; font-size: 0.7rem; white-space: nowrap;">
                                 COMPLETE & EXPIRE
                             </button>
@@ -173,6 +176,8 @@
     <script>
         const STAKING_ADDR = "0x6623Af17C813252CDBE29d062817fd27Bd865c35";
         const BASE_CHAIN_ID = "0x2105"; // 8453
+        const BASE_RPC_URL = "https://mainnet.base.org";
+        const WALLET_ADDRESS = "{{ user.address if user.login_type == 'wallet' and user.address else '' }}";
 
         let MIN_RESERVE_AMOUNT = 10000000n; // Default fallback: 10.00 USDC (6 decimals)
         const STAKING_ABI = [
@@ -181,6 +186,9 @@
             "function minStake() view returns (uint256)",
             "function balanceOf(address account) view returns (uint256)",
         ];
+        const stakingInterface = new ethers.Interface(STAKING_ABI);
+
+        let baseRpcProvider;
 
         // Ensure user is on Base Chain
         const ensureBaseChain = async () => {
@@ -224,9 +232,65 @@
             }
         };
 
+        const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+        const getBaseRpcProvider = () => {
+            if (!baseRpcProvider) {
+                baseRpcProvider = new ethers.JsonRpcProvider(
+                    BASE_RPC_URL,
+                    { name: 'base', chainId: 8453 }
+                );
+            }
+            return baseRpcProvider;
+        };
+
+        const waitForReceiptWithRpc = async (txHash, timeoutMs = 120000, pollMs = 3000) => {
+            const rpcProvider = getBaseRpcProvider();
+            const startTime = Date.now();
+
+            while ((Date.now() - startTime) < timeoutMs) {
+                try {
+                    const receipt = await rpcProvider.getTransactionReceipt(txHash);
+                    if (receipt) return receipt;
+                } catch (receiptError) {
+                    console.warn('Receipt lookup failed, retrying...', receiptError);
+                }
+
+                await sleep(pollMs);
+            }
+
+            throw new Error(`TX_CONFIRMATION_TIMEOUT: ${txHash}`);
+        };
+
+        const sendWalletTransaction = async ({ from, to, data }) => {
+            const txHash = await window.ethereum.request({
+                method: 'eth_sendTransaction',
+                params: [{ from, to, data }],
+            });
+
+            if (!txHash) {
+                throw new Error('TX_HASH_MISSING');
+            }
+
+            return txHash;
+        };
+
+        const syncWithdrawalState = async (txHash) => {
+            const response = await fetch('/api/staking/deactivate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ txHash }),
+            });
+
+            const result = await response.json();
+            if (!response.ok || !result.success) {
+                throw new Error(result.error || 'FAILED_TO_SYNC_WITHDRAWAL_STATE');
+            }
+        };
+
         // Fetch minDeposit to update UI
         const fetchMinDeposit = async () => {
-            const RPC_URLS = ["https://mainnet.base.org", "https://sepolia.base.org"];
+            const RPC_URLS = [BASE_RPC_URL];
 
             for (const rpc of RPC_URLS) {
                 try {
@@ -267,9 +331,11 @@
 
         const updateDashboardUI = (min) => {
             MIN_RESERVE_AMOUNT = min;
-            const humanReadable = (Number(min) / 1000000).toFixed(2);
             const el = document.getElementById('active-reserve-text');
-            // If the user is currently staked, this will be replaced by their actual balance in the next check
+            if (el) {
+                const humanReadable = (Number(min) / 1000000).toFixed(2);
+                el.textContent = `COMMITMENT_ACTIVE (${humanReadable} USDC RESERVED)`;
+            }
         };
 
         const getUserStakedBalance = async (signerAddress, contract) => {
@@ -284,7 +350,33 @@
             return 0n;
         };
 
-        window.addEventListener('load', fetchMinDeposit);
+        const refreshReserveStatus = async () => {
+            if (!WALLET_ADDRESS) return;
+
+            const el = document.getElementById('active-reserve-text');
+            if (!el) return;
+
+            try {
+                const provider = getBaseRpcProvider();
+                const stakingContract = new ethers.Contract(STAKING_ADDR, STAKING_ABI, provider);
+                const userBalance = await getUserStakedBalance(WALLET_ADDRESS, stakingContract);
+                if (userBalance && userBalance > 0n) {
+                    const humanReadable = (Number(userBalance) / 1000000).toFixed(2);
+                    el.textContent = `COMMITMENT_ACTIVE (${humanReadable} USDC RESERVED)`;
+                    return;
+                }
+            } catch (err) {
+                console.warn('Failed to fetch on-chain reserve status.', err);
+            }
+
+            const fallbackReadable = (Number(MIN_RESERVE_AMOUNT) / 1000000).toFixed(2);
+            el.textContent = `COMMITMENT_ACTIVE (${fallbackReadable} USDC RESERVED)`;
+        };
+
+        window.addEventListener('load', async () => {
+            await fetchMinDeposit();
+            await refreshReserveStatus();
+        });
 
         const makeLive = async (postId) => {
             try {
@@ -330,18 +422,28 @@
 
                 const provider = new ethers.BrowserProvider(window.ethereum);
                 const signer = await provider.getSigner();
-                const stakingContract = new ethers.Contract(STAKING_ADDR, STAKING_ABI, signer);
+                const userAddress = await signer.getAddress();
 
                 if (!confirm(`COMPLETION_CONFIRM: This will withdraw your commitment and mark this request as EXPIRED. Continue?`)) {
                     return;
                 }
 
                 console.log(`Initiating blockchain withdrawal for ID: ${stakingId}`);
-                const tx = await stakingContract.withdraw(stakingId);
-                console.log(`TX_SENT: ${tx.hash}`);
+                const withdrawData = stakingInterface.encodeFunctionData('withdraw', [stakingId]);
+                const txHash = await sendWalletTransaction({
+                    from: userAddress,
+                    to: STAKING_ADDR,
+                    data: withdrawData,
+                });
+                console.log(`TX_SENT: ${txHash}`);
 
-                await tx.wait();
+                const receipt = await waitForReceiptWithRpc(txHash);
+                if (receipt.status !== 1) {
+                    throw new Error('STAKING_WITHDRAW_FAILED');
+                }
                 console.log('TX_CONFIRMED');
+
+                await syncWithdrawalState(txHash);
 
                 alert('COMPLETED: Commitment withdrawn. Your post has been marked as EXPIRED and archived.');
                 window.location.reload();
