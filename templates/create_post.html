@@ -76,17 +76,20 @@
             <div class="composer-container">
                 {% if user.login_type == 'wallet' %}
                 <div class="step-indicator">
-                    <span class="step">01_STAKE_USDC <span style="color: var(--terminal-green);">(TX_CONFIRMED ✓)</span></span>
-                    <span class="step active">02_COMPOSE_POST</span>
+                    <span class="step">01_COMMITMENT_MADE <span style="color: var(--terminal-green);">(✓)</span></span>
+                    <span class="step active">02_POST_YOUR_NEED</span>
                 </div>
 
-                <div class="tx-id">TX_AUTH_KEY: {{ user.address[:16] }}...{{ user.address[-8:] }} // STATUS: SESSION_STAKED</div>
+                <div class="tx-id">WALLET: {{ user.address[:16] }}...{{ user.address[-8:] }} // COMMITMENT: ACTIVE</div>
                 {% else %}
                 <div class="tx-id">AUTH_ID: {{ user.id[:16] }}... // PROVIDER: {{ user.login_type.upper() }}</div>
                 {% endif %}
 
+                <p style="color: var(--terminal-green); opacity: 0.7; margin-bottom: 20px; font-size: 0.9rem;">
+                    [!] When your need is fulfilled, withdraw your commitment from dashboard — this post will automatically expire.
+                </p>
 
-                <h1 class="terminal-prompt" style="font-size: 1.5rem;">INITIATE_MESSAGE_BROADCAST</h1>
+                <h1 class="terminal-prompt" style="font-size: 1.5rem;">BROADCAST_YOUR_REQUEST</h1>
 
                 <form action="/post/new" method="POST">
                     <div class="form-group">
@@ -100,15 +103,15 @@
                     </div>
 
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 40px;">
-                        <a href="/" class="muted" style="text-decoration: none; border-bottom: 1px solid transparent;" onmouseover="this.style.borderBottom='1px solid var(--terminal-green)'" onmouseout="this.style.borderBottom='1px solid transparent'">ABORT_SESSION</a>
-                        <button type="submit" class="terminal-button">EXECUTE_BROADCAST</button>
+                        <a href="/" class="muted" style="text-decoration: none; border-bottom: 1px solid transparent;" onmouseover="this.style.borderBottom='1px solid var(--terminal-green)'" onmouseout="this.style.borderBottom='1px solid transparent'">CANCEL</a>
+                        <button type="submit" class="terminal-button">PUBLISH_REQUEST</button>
                     </div>
                 </form>
             </div>
         </section>
 
         <footer style="margin-top: 60px; text-align: center;">
-            &copy; 2026 STAKING_BBS // ALL_SYSTEMS_OPERATIONAL
+            &copy; 2026 STAKING_BBS // SELF_CLEANING_PROTOCOL
         </footer>
     </div>
 </body>

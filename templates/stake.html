@@ -99,16 +99,13 @@
 
                 <h2 class="terminal-prompt"
                     style="font-size: 1.6rem; border-bottom: 1px dashed var(--terminal-green); padding-bottom: 10px; margin-bottom: 30px; text-shadow: 0 0 5px var(--terminal-green);">
-                    REQUIRED_ACTION: STAKE_RESERVE</h2>
+                    INFORMATION_SELF_CLEANING_PROTOCAL</h2>
 
-                <p style="color: var(--terminal-green); opacity: 0.8; font-size: 1rem;">To prevent spam and ensure
-                    quality, all wallet-based transmissions require a <span id="display-amount-inline"
-                        style="font-weight: bold; border-bottom: 1px solid var(--terminal-green);">minimum staking
-                        reserve of 10.00 USDC</span>.</p>
+                <p style="color: var(--terminal-green); opacity: 0.8; font-size: 1rem;">In the AI era, information explosion is inevitable. To ensure your transmission doesn't drown in noise, we use a <span style="font-weight: bold; border-bottom: 1px solid var(--terminal-green);">commitment mechanism</span>. When your need is fulfilled, withdraw your stake — your post will automatically expire.</p>
 
                 <div class="stake-input-container" style="text-align: center; margin: 30px 0;">
                     <span class="label"
-                        style="display: block; margin-bottom: 15px; opacity: 0.7;">SPECIFY_CUSTOM_RESERVE:</span>
+                        style="display: block; margin-bottom: 15px; opacity: 0.7;">COMMITMENT_AMOUNT:</span>
                     <div style="display: inline-flex; align-items: baseline; gap: 10px;">
                         <input type="number" id="stake-input" class="terminal-input" step="0.01" value="10.00"
                             style="font-size: 3rem; width: 300px; text-align: center; background: rgba(0,255,0,0.05); border: 2px solid var(--terminal-green); color: var(--terminal-green); text-shadow: 0 0 10px var(--terminal-green); font-family: 'Courier New', Courier, monospace; outline: none;">
@@ -121,8 +118,8 @@
 
                 <div style="text-align: center; margin-top: 30px;">
                     <button id="stake-button" class="terminal-button"
-                        onclick="performStake()">INITIATE_STAKING_SEQUENCE</button>
-                    <p id="status-text" class="muted" style="margin-top: 15px;">WAITING_FOR_USER_CONFIRMATION...</p>
+                        onclick="performStake()">MAKE_COMMITMENT</button>
+                    <p id="status-text" class="muted" style="margin-top: 15px;">AWAITING_CONFIRMATION...</p>
 
                     <div id="loading-bar" class="loading-bar">
                         <div id="loading-progress" class="loading-progress"></div>
@@ -131,26 +128,22 @@
 
                 <div
                     style="margin-top: 40px; font-size: 0.8rem; border-top: 1px dashed var(--terminal-green); padding-top: 20px; color: var(--terminal-green);">
-                    <span class="label">OPERATIONAL_FEEDBACK_LOOP</span>
-                    <p style="margin-top: 10px; opacity: 0.9;">Our objective is to ensure that terminal communications
-                        are
-                        high-relevance and self-maintained. We do not charge fees for broadcasting.</p>
-                    <p style="opacity: 0.9;"><strong
-                            style="color: #fff; text-shadow: 0 0 5px var(--terminal-green);">RESERVATION_MECHANISM:</strong>
-                        Your reserve remains yours. When your transmission
-                        objective has been met, you may <strong style="color: #fff;">WITHDRAW_FUNDS</strong> via the
-                        dashboard. At that
-                        moment, your transmissions will go <strong
-                            style="color: #f00; text-shadow: 0 0 5px #f00;">OFFLINE</strong> as the quality-guarantee
-                        reserve is
-                        relinquished. This keeps the network efficient and noise-free.</p>
+                    <span class="label">HOW_IT_WORKS</span>
+                    <p style="margin-top: 10px; opacity: 0.9;"><strong style="color: #fff; text-shadow: 0 0 5px var(--terminal-green);">1. POST_WITH_COMMITMENT:</strong>
+                        Your stake is a promise. It doesn't cost you anything — it's your money.</p>
+                    <p style="opacity: 0.9;"><strong style="color: #fff; text-shadow: 0 0 5px var(--terminal-green);">2. WAIT_FOR_RESPONSE:</strong>
+                        When someone satisfies your need, withdraw your stake to signal completion.</p>
+                    <p style="opacity: 0.9;"><strong style="color: #fff; text-shadow: 0 0 5px var(--terminal-green);">3. AUTO_EXPIRE:</strong>
+                        Upon withdrawal, your post automatically <strong style="color: #f00;">EXPIRES</strong>. 
+                        No manual deletion. The network cleans itself.</p>
+                    <p style="margin-top: 15px; opacity: 0.7;">This creates a natural incentive: urgent needs get quick responses, stale requests get cleaned up. No moderation needed.</p>
                 </div>
 
             </div>
         </section>
 
         <footer style="margin-top: 60px; text-align: center;">
-            <a href="/" style="color: inherit;">[ BACK_TO_TERMINAL ]</a>
+            <a href="/" style="color: inherit;">[ BACK_TO_ACTIVE_REQUESTS ]</a>
         </footer>
     </div>
 
@@ -276,45 +269,45 @@
                 progress.style.width = '10%';
 
                 // 0. Ensure Base Chain
-                status.textContent = 'NETWORK_VERIFICATION: IN_PROGRESS...';
+                status.textContent = 'VERIFYING_NETWORK...';
                 const isBase = await ensureBaseChain();
                 if (!isBase) {
-                    throw new Error('NETWORK_MISMATCH: PLEASE_SWITCH_TO_BASE_MAINNET');
+                    throw new Error('PLEASE_SWITCH_TO_BASE_MAINNET');
                 }
 
                 const provider = new ethers.BrowserProvider(window.ethereum);
                 const signer = await provider.getSigner();
 
                 // 1. Approve USDC
-                status.textContent = 'TRANSACTION_AWAITING: USDC_APPROVAL...';
+                status.textContent = 'APPROVING_USDC...';
                 const usdcContract = new ethers.Contract(USDC_ADDR, USDC_ABI, signer);
                 const approveTx = await usdcContract.approve(STAKING_ADDR, finalStakingUnits);
                 progress.style.width = '30%';
-                status.textContent = 'TX_PENDING: AWAITING_APPROVAL_CONFIRMATION...';
+                status.textContent = 'AWAITING_APPROVAL...';
                 await approveTx.wait();
 
                 // 2. Deposit/Stake
                 progress.style.width = '60%';
-                status.textContent = 'TRANSACTION_AWAITING: STAKING_DEPOSIT...';
+                status.textContent = 'DEPOSITING_COMMITMENT...';
                 const stakingContract = new ethers.Contract(STAKING_ADDR, STAKING_ABI, signer);
                 const depositTx = await stakingContract.deposit(finalStakingUnits);
                 progress.style.width = '80%';
-                status.textContent = 'TX_PENDING: AWAITING_DEPOSIT_CONFIRMATION...';
+                status.textContent = 'CONFIRMING_DEPOSIT...';
                 await depositTx.wait();
 
                 progress.style.width = '100%';
-                status.innerHTML = '<span style="color: #fff;">STAKE_SUCCESS! ON-CHAIN TRANSACTION CONFIRMED.</span>';
+                status.innerHTML = '<span style="color: #fff;">COMMITMENT_CONFIRMED! YOU CAN NOW POST.</span>';
                 
                 setTimeout(() => {
-                    alert('STAKING_COMPLETE: The decentralized indexer will update your transmission status shortly. Please refresh the dashboard in a moment.');
+                    alert('SUCCESS: Commitment made! You can now post your request. When fulfilled, withdraw to auto-expire.');
                     window.location.href = '/dashboard';
                 }, 2000);
 
             } catch (err) {
                 console.error(err);
-                status.textContent = 'TRANSACTION_REJECTED_OR_FAILED';
+                status.textContent = 'TRANSACTION_FAILED';
                 btn.disabled = false;
-                btn.textContent = 'INITIATE_STAKING_SEQUENCE';
+                btn.textContent = 'MAKE_COMMITMENT';
                 alert(`ERR: ${err.reason || err.message || 'TRANSACTION_FAILED'}`);
             }
         };

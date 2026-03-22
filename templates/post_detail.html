@@ -56,12 +56,12 @@
         <section>
             {% if not post.live and user.id != post.user and user.id != post.author_id %}
             <div class="terminal-card" style="border-color: #555 !important;">
-                <header style="background: #555 !important; color: #fff !important;">DECOMMISSIONED_ENTRY // ACCESS_RESTRICTED</header>
+                <header style="background: #555 !important; color: #fff !important;">REQUEST_EXPIRED // ARCHIVED</header>
                 <div style="padding: 50px; text-align: center;">
-                    <h1 style="color: #888; text-shadow: 0 0 5px #555; font-size: 2rem;">DECRYPT_FAIL: TRANSMISSION_OFFLINE</h1>
-                    <p class="muted" style="margin-top: 20px;">The requested data packet has been retracted by the source or the staking reserve has been relinquished.</p>
+                    <h1 style="color: #888; text-shadow: 0 0 5px #555; font-size: 2rem;">REQUEST_EXPIRED</h1>
+                    <p class="muted" style="margin-top: 20px;">This request has been completed (commitment withdrawn) and automatically archived.</p>
                     <div style="margin-top: 40px;">
-                        <a href="/" class="terminal-button">RETURN_TO_BASE</a>
+                        <a href="/" class="terminal-button">VIEW_ACTIVE_REQUESTS</a>
                     </div>
                 </div>
             </div>
@@ -77,7 +77,7 @@
                     <div style="display: flex; align-items: center; gap: 10px;">
                         <span class="label">{{ post.category or 'GENERAL' }}</span>
                         {% if not post.live %}
-                        <span class="label" style="background: #555; color: #fff; font-size: 0.7rem; border: none; opacity: 0.8;">OFFLINE</span>
+                        <span class="label" style="background: #555; color: #fff; font-size: 0.7rem; border: none; opacity: 0.8;">EXPIRED</span>
                         {% endif %}
                     </div>
                     
@@ -137,7 +137,7 @@
 
         <footer
             style="margin-top: 100px; border-top: 1px solid #0f0; padding-top: 20px; font-size: 0.8rem; text-align: center; opacity: 0.5;">
-            &copy; 2026 STAKING_BBS // ALL_SYSTEMS_OPERATIONAL
+            &copy; 2026 STAKING_BBS // SELF_CLEANING_PROTOCOL // NO_MODERATION_NEEDED
         </footer>
     </div>
 </body>
