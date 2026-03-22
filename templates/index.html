@@ -18,22 +18,22 @@
             <nav class="terminal-menu">
                 <ul>
                     {% if not user %}
-                    <li><a class="menu-item" href="{{ url_for('login_twitter') }}">FOR_HUMANS</a></li>
-                    <li><a class="menu-item" href="#" onclick="loginWithMetaMask()">FOR_POSTS</a></li>
+                    <li><a class="menu-item" href="{{ url_for('login_twitter') }}">BROWSE</a></li>
+                    <li><a class="menu-item" href="#" onclick="loginWithMetaMask()">POST</a></li>
                     {% else %}
                     {% if user.login_type == 'wallet' %}
                     <li><a class="menu-item" href="{{ url_for('new_post') }}"
-                            style="background: var(--terminal-green); color: var(--terminal-black) !important; padding: 2px 10px; font-weight: bold;">NEW_POST+</a>
+                            style="background: var(--terminal-green); color: var(--terminal-black) !important; padding: 2px 10px; font-weight: bold;">NEW_REQUEST+</a>
                     </li>
 
                     {% else %}
                     <li style="position: relative;" class="has-tooltip">
                         <span class="menu-item"
-                            style="opacity: 0.3; cursor: not-allowed; border: 1px solid #555; padding: 2px 10px;">NEW_POST+</span>
-                        <div class="terminal-tooltip">WALLET_AUTH_REQUIRED // STAKING: REFUNDABLE_FREE_POST</div>
+                            style="opacity: 0.3; cursor: not-allowed; border: 1px solid #555; padding: 2px 10px;">NEW_REQUEST+</span>
+                        <div class="terminal-tooltip">WALLET_REQUIRED // COMMITMENT_MECHANISM: FULLY_REFUNDABLE</div>
                     </li>
                     {% endif %}
-                    <li><a class="menu-item" href="{{ url_for('dashboard') }}">PROFILE</a></li>
+                    <li><a class="menu-item" href="{{ url_for('dashboard') }}">MY_POSTS</a></li>
                     <li><a class="menu-item" href="{{ url_for('logout') }}" style="color: #f00;">LOGOUT</a></li>
                     {% endif %}
 
@@ -45,10 +45,10 @@
         <section>
             <h1
                 style="color: var(--terminal-green); text-transform: uppercase; font-weight: 800; border-bottom: 2px solid var(--terminal-green); display: inline-block; margin-bottom: 30px;">
-                BOARD_FEED // LIVE_STAKING_POSTS</h1>
+                ACTIVE_REQUESTS // SELF_CLEANING_PROTOCOL</h1>
 
             <div class="terminal-card">
-                <header>COMMUNITY_SESSIONS / PUBLIC_POSTS</header>
+                <header>ALL_REQUESTS // AUTO_EXPIRE_WHEN_COMPLETED</header>
                 <div class="post-list">
                     {% if posts %}
                     {% for post in posts %}
@@ -93,14 +93,13 @@
             {% if not user %}
             <div
                 style="margin-top: 40px; border: 1px dashed #0f0; padding: 30px; text-align: center; background: rgba(0, 255, 0, 0.05);">
-                <h2 style="margin-top: 0;">AUTHENTICATION REQUIRED</h2>
-                <p class="muted">Access to write/interact restricted. Log in via X (Twitter) or Wallet to unlock full
-                    terminal capabilities.</p>
-                <div style="display: flex; flex-direction: column; gap: 15px; max-width: 350px; margin: 30px auto;">
-                    <a href="{{ url_for('login_twitter') }}" class="terminal-button">EXECUTE FOR_HUMANS (LOGIN_X)</a>
-                    <button id="metamask-btn" class="terminal-button" onclick="loginWithMetaMask()">EXECUTE FOR_POSTS
-                        (LOGIN_WALLET)</button>
+                <h2 style="margin-top: 0;">AI_ERA_INFO_OVERLOAD_SOLUTION</h2>
+                <p class="muted">To prevent information explosion, posts require a refundable commitment. When your need is met, withdraw — your post expires automatically.</p>
+                <div style="display: flex; flex-direction: column; gap: 15px; max-width: 400px; margin: 30px auto;">
+                    <a href="{{ url_for('login_twitter') }}" class="terminal-button">BROWSE (TWITTER_LOGIN)</a>
+                    <button id="metamask-btn" class="terminal-button" onclick="loginWithMetaMask()">POST (WALLET_COMMITMENT)</button>
                 </div>
+            </div>
             </div>
             {% else %}
             <div class="terminal-alert terminal-alert-primary" style="margin-top: 40px;">
@@ -111,7 +110,7 @@
 
         <footer
             style="margin-top: 100px; border-top: 1px solid #0f0; padding-top: 20px; font-size: 0.8rem; text-align: center; opacity: 0.5;">
-            &copy; 2026 STAKING_BBS // ALL_SYSTEMS_OPERATIONAL
+            &copy; 2026 STAKING_BBS // SELF_CLEANING_PROTOCOL // NO_MODERATION_NEEDED
         </footer>
     </div>
 
@@ -130,7 +129,7 @@
                 const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
                 const address = accounts[0];
                 const timestamp = Math.floor(Date.now() / 1000);
-                const message = `Welcome to Staking DApp!\n\nWallet: ${address}\nTimestamp: ${timestamp}`;
+                const message = `Commit to the self-cleaning network.\n\nWallet: ${address}\nTimestamp: ${timestamp}`;
 
                 const signature = await window.ethereum.request({
                     method: 'personal_sign',

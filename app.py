@@ -128,7 +128,7 @@ def make_post_live(post_id):
     if supabase:
         try:
             # Verify ownership
-            response = supabase.table("staking_posts").select("*").eq("id", post_id).single().execute()
+            response = supabase.table("staking_posts").select("*").eq("id", post_id).eq("delete", False).single().execute()
             post = response.data
             if not post:
                 return jsonify({"error": "POST_NOT_FOUND"}), 404
@@ -167,6 +167,7 @@ def edit_post(post_id):
             response = supabase.table("staking_posts") \
                 .select("*") \
                 .eq("id", post_id) \
+                .eq("delete", False) \
                 .single() \
                 .execute()
             post = response.data
@@ -269,6 +270,7 @@ def index():
             response = supabase.table("staking_posts") \
                 .select("*") \
                 .eq("live", True) \
+                .eq("delete", False) \
                 .order("id", desc=True) \
                 .limit(page_size) \
                 .offset(offset) \
@@ -287,6 +289,7 @@ def post_detail(post_id):
         try:
             response = supabase.table("staking_posts") \
                 .select("*") \
+                .eq("delete", False) \
                 .eq("id", post_id) \
                 .single() \
                 .execute()
@@ -384,6 +387,7 @@ def dashboard():
             response = supabase.table("staking_posts") \
                 .select("*") \
                 .eq("user", user["id"]) \
+                .eq("delete", False) \
                 .order("id", desc=True) \
                 .execute()
             user_posts = response.data

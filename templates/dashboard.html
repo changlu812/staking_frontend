@@ -17,6 +17,17 @@
             </div>
             <nav class="terminal-menu">
                 <ul>
+                    {% if user.login_type == 'wallet' %}
+                    <li><a class="menu-item" href="{{ url_for('new_post') }}"
+                            style="background: var(--terminal-green); color: var(--terminal-black) !important; padding: 2px 10px; font-weight: bold;">NEW_REQUEST+</a>
+                    </li>
+                    {% else %}
+                    <li style="position: relative;" class="has-tooltip">
+                        <span class="menu-item"
+                            style="opacity: 0.3; cursor: not-allowed; border: 1px solid #555; padding: 2px 10px;">NEW_REQUEST+</span>
+                        <div class="terminal-tooltip">WALLET_REQUIRED</div>
+                    </li>
+                    {% endif %}
                     <li><a class="menu-item" href="/">HOME</a></li>
                     <li><a class="menu-item" href="{{ url_for('logout') }}" style="color: #f00;">LOGOUT</a></li>
                 </ul>
@@ -48,34 +59,32 @@
 
             {% if user.login_type == 'wallet' %}
             <div class="terminal-card" style="margin-top: 40px; border-color: #ff0 !important;">
-                <header style="background: #ff0 !important; color: #000 !important;">STAKING_RESERVE // MONITOR</header>
+                <header style="background: #ff0 !important; color: #000 !important;">COMMITMENT_RESERVE // MONITOR</header>
                 <div style="padding: 20px;">
                     <div
                         style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                         <div>
                             <span class="label" style="background: #ff0;">STATUS:</span>
                             {% if user.is_staked %}
-                            <span id="active-reserve-text" style="color: #ff0; font-weight: bold;">ACTIVE_RESERVE (10.00
-                                USDC)</span>
+                            <span id="active-reserve-text" style="color: #ff0; font-weight: bold;">COMMITMENT_ACTIVE ({{ user.stake_amount }} USDC RESERVED)</span>
                             {% else %}
-                            <span style="opacity: 0.5;">INACTIVE // STAKE_REQUIRED_FOR_LIVE_FEED</span>
+                            <span style="opacity: 0.5;">NO_ACTIVE_COMMITMENT // STAKE_TO_POST</span>
                             {% endif %}
                         </div>
                         {% if user.is_staked %}
                         <button onclick="withdrawReserve()" class="terminal-button"
-                            style="border-color: #f00 !important; color: #f00 !important; padding: 5px 15px; font-size: 0.9rem;">WITHDRAW_RESERVE</button>
+                            style="border-color: #f00 !important; color: #f00 !important; padding: 5px 15px; font-size: 0.9rem;">COMPLETE & WITHDRAW</button>
                         {% else %}
                         <a href="{{ url_for('stake') }}" class="terminal-button"
-                            style="padding: 5px 15px; font-size: 0.9rem;">INITIATE_STAKE</a>
+                            style="padding: 5px 15px; font-size: 0.9rem;">MAKE_COMMITMENT</a>
                         {% endif %}
                     </div>
-                    <p class="muted" style="font-size: 0.8rem; margin: 0;">[!] NOTICE: Withdrawing your reserve will
-                        immediately de-broadcast all active transmissions from your ID.</p>
+                    <p class="muted" style="font-size: 0.8rem; margin: 0;">[!] NOTE: Withdrawing completes your commitment — all associated posts will EXPIRE immediately.</p>
                 </div>
             </div>
             {% endif %}
             <div class="terminal-card" style="margin-top: 40px;">
-                <header>MY_TRANSMISSIONS // PRIVATE_FEED</header>
+                <header>MY_POSTS // COMMITMENT_STATUS</header>
                 <div class="post-list">
                     {% if posts %}
                     {% for post in posts %}
@@ -94,10 +103,10 @@
                                         {{ post.staking }}</span>
                                     {% if post.live %}
                                     <span class="label"
-                                        style="background: var(--terminal-green); color: var(--terminal-black); font-size: 0.7rem;">LIVE</span>
+                                        style="background: var(--terminal-green); color: var(--terminal-black); font-size: 0.7rem;">ACTIVE</span>
                                     {% else %}
                                     <span class="label"
-                                        style="background: #555; color: #fff; font-size: 0.7rem; opacity: 0.5;">OFFLINE</span>
+                                        style="background: #555; color: #fff; font-size: 0.7rem; opacity: 0.5;">EXPIRED</span>
                                     {% endif %}
                                 </div>
                                 <h3 style="margin: 0 !important; font-size: 1.4rem;">
@@ -115,7 +124,7 @@
                             <button onclick="withdrawReserve({{ post.staking.split(':')[1] }})"
                                 class=" terminal-button tooltip-trigger"
                                 style="border-color: #f00 !important; color: #f00 !important; padding: 4px 12px; font-size: 0.7rem; white-space: nowrap;">
-                                WITHDRAW_RESERVE
+                                COMPLETE & EXPIRE
                             </button>
                             {% if not post.live %}
                             <button onclick="makeLive('{{ post.id }}')" class="terminal-button"
@@ -134,16 +143,14 @@
 
             <div style="margin-top: 40px; display: flex; flex-direction: column; gap: 20px; align-items: flex-start;">
                 {% if user.login_type == 'wallet' %}
-                <a href="{{ url_for('new_post') }}" class="terminal-button" style="display: inline-block;">CREATE NEW
-                    POST</a>
+                <a href="{{ url_for('new_post') }}" class="terminal-button" style="display: inline-block;">POST_NEW_REQUEST</a>
                 {% else %}
                 <div style="position: relative;" class="has-tooltip">
                     <button class="terminal-button"
-                        style="opacity: 0.3; cursor: not-allowed; border: 1px solid #555;">CREATE NEW POST</button>
+                        style="opacity: 0.3; cursor: not-allowed; border: 1px solid #555;">POST_NEW_REQUEST</button>
                     <div class="terminal-tooltip"
                         style="position: absolute; top: 0; left: 105%; margin-top: 0; margin-left: 10px; transform: none; right: auto;">
-                        WALLET_AUTH_REQUIRED // Only wallet users can post. Staking is 100% refundable, making it
-                        essentially free.
+                        WALLET_REQUIRED // Commitment is 100% refundable.
                     </div>
                 </div>
                 {% endif %}
@@ -159,7 +166,7 @@
 
         <footer
             style="margin-top: 60px; border-top: 1px solid #0f0; padding-top: 20px; font-size: 0.8rem; text-align: center;">
-            &copy; 2026 STAKING_BBS // ALL_RIGHTS_RESERVED
+            &copy; 2026 STAKING_BBS // SELF_CLEANING_PROTOCOL
         </footer>
     </div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
@@ -325,7 +332,7 @@
                 const signer = await provider.getSigner();
                 const stakingContract = new ethers.Contract(STAKING_ADDR, STAKING_ABI, signer);
 
-                if (!confirm(`STAKING_WITHDRAWAL_NOTICE: Confirming this action will release the reserve for STAKING_ID ${stakingId}. The decentralized indexer will de-broadcast your transmission once confirmed. CONTINUE?`)) {
+                if (!confirm(`COMPLETION_CONFIRM: This will withdraw your commitment and mark this request as EXPIRED. Continue?`)) {
                     return;
                 }
 
@@ -336,7 +343,7 @@
                 await tx.wait();
                 console.log('TX_CONFIRMED');
 
-                alert('WITHDRAWAL_SUCCESS: Your reserve request processed. Transmission status will update via indexer.');
+                alert('COMPLETED: Commitment withdrawn. Your post has been marked as EXPIRED and archived.');
                 window.location.reload();
             } catch (err) {
                 console.error(err);
