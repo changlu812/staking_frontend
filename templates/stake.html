@@ -297,6 +297,19 @@
             return txHash;
         };
 
+        const syncStakeState = async (txHash) => {
+            const response = await fetch('/api/staking/activate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ txHash }),
+            });
+
+            const result = await response.json();
+            if (!response.ok || !result.success) {
+                throw new Error(result.error || 'FAILED_TO_SYNC_STAKING_STATE');
+            }
+        };
+
         const performStake = async () => {
             if (typeof window.ethereum === 'undefined') {
                 alert('ERR: METAMASK_NOT_DETECTED');
@@ -338,21 +351,46 @@
                 const userAddress = await signer.getAddress();
 
                 // 1. Approve USDC
-                status.textContent = 'TRANSACTION_AWAITING: USDC_APPROVAL...';
-                const usdcContract = new ethers.Contract(USDC_ADDR, USDC_ABI, signer);
-                const approveTx = await usdcContract.approve(STAKING_ADDR, finalStakingUnits);
-                progress.style.width = '30%';
-                status.textContent = 'TX_PENDING: AWAITING_APPROVAL_CONFIRMATION...';
-                await approveTx.wait();
+                const alreadyApproved = await hasEnoughAllowance(userAddress, finalStakingUnits);
+                if (!alreadyApproved) {
+                    status.textContent = 'TRANSACTION_AWAITING: USDC_APPROVAL...';
+                    const approveData = usdcInterface.encodeFunctionData('approve', [STAKING_ADDR, finalStakingUnits]);
+                    const approveHash = await sendWalletTransaction({
+                        from: userAddress,
+                        to: USDC_ADDR,
+                        data: approveData,
+                    });
+
+                    progress.style.width = '30%';
+                    status.textContent = 'TX_PENDING: AWAITING_APPROVAL_CONFIRMATION...';
+                    const approveReceipt = await waitForReceiptWithRpc(approveHash);
+                    if (approveReceipt.status !== 1) {
+                        throw new Error('USDC_APPROVAL_FAILED');
+                    }
+                } else {
+                    progress.style.width = '45%';
+                    status.textContent = 'USDC_ALLOWANCE_DETECTED: SKIPPING_APPROVAL...';
+                }
 
                 // 2. Deposit/Stake
                 progress.style.width = '60%';
                 status.textContent = 'TRANSACTION_AWAITING: STAKING_DEPOSIT...';
-                const stakingContract = new ethers.Contract(STAKING_ADDR, STAKING_ABI, signer);
-                const depositTx = await stakingContract.deposit(finalStakingUnits);
+                const depositData = stakingInterface.encodeFunctionData('deposit', [finalStakingUnits]);
+                const depositHash = await sendWalletTransaction({
+                    from: userAddress,
+                    to: STAKING_ADDR,
+                    data: depositData,
+                });
                 progress.style.width = '80%';
                 status.textContent = 'TX_PENDING: AWAITING_DEPOSIT_CONFIRMATION...';
-                await depositTx.wait();
+                const depositReceipt = await waitForReceiptWithRpc(depositHash);
+                if (depositReceipt.status !== 1) {
+                    throw new Error('STAKING_DEPOSIT_FAILED');
+                }
+
+                progress.style.width = '90%';
+                status.textContent = 'SYNCING_PROFILE_STATE...';
+                await syncStakeState(depositHash);
 
                 progress.style.width = '100%';
                 status.innerHTML = '<span style="color: #fff;">COMMITMENT_CONFIRMED! YOU CAN NOW POST.</span>';

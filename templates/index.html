@@ -22,8 +22,8 @@
                     <li><a class="menu-item" href="#" onclick="loginWithMetaMask()">POST</a></li>
                     {% else %}
                     {% if user.login_type == 'wallet' %}
-                    <li><a class="menu-item" href="{{ url_for('new_post') }}"
-                            style="background: var(--terminal-green); color: var(--terminal-black) !important; padding: 2px 10px; font-weight: bold;">NEW_REQUEST+</a>
+                    <li><a class="menu-item" href="{{ url_for('new_post' if user.is_staked else 'stake') }}"
+                            style="background: var(--terminal-green); color: var(--terminal-black) !important; padding: 2px 10px; font-weight: bold;">{{ 'NEW_REQUEST+' if user.is_staked else 'MAKE_COMMITMENT+' }}</a>
                     </li>
 
                     {% else %}
