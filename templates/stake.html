@@ -159,14 +159,22 @@
         const STAKING_ADDR = "0x6623Af17C813252CDBE29d062817fd27Bd865c35";
         const USDC_ADDR = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"; // Base USDC Address
         const BASE_CHAIN_ID = "0x2105"; // 8453
+        const BASE_RPC_URL = "https://mainnet.base.org";
 
         let MIN_STAKE_AMOUNT = 10000000n; // Default fallback: 10.00 USDC (6 decimals)
 
-        const USDC_ABI = ["function approve(address spender, uint256 amount) returns (bool)"];
+        const USDC_ABI = [
+            "function approve(address spender, uint256 amount) returns (bool)",
+            "function allowance(address owner, address spender) view returns (uint256)",
+        ];
         const STAKING_ABI = [
             "function deposit(uint256 amount)",
             "function minDeposit() view returns (uint256)",
         ];
+        const usdcInterface = new ethers.Interface(USDC_ABI);
+        const stakingInterface = new ethers.Interface(STAKING_ABI);
+
+        let baseRpcProvider;
 
         // Ensure user is on Base Chain
         const ensureBaseChain = async () => {
@@ -246,6 +254,56 @@
 
         window.addEventListener('load', fetchMinDeposit);
 
+        const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+        const getBaseRpcProvider = () => {
+            if (!baseRpcProvider) {
+                baseRpcProvider = new ethers.JsonRpcProvider(
+                    BASE_RPC_URL,
+                    { name: 'base', chainId: 8453 }
+                );
+            }
+            return baseRpcProvider;
+        };
+
+        const waitForReceiptWithRpc = async (txHash, timeoutMs = 120000, pollMs = 3000) => {
+            const rpcProvider = getBaseRpcProvider();
+            const startTime = Date.now();
+
+            while ((Date.now() - startTime) < timeoutMs) {
+                try {
+                    const receipt = await rpcProvider.getTransactionReceipt(txHash);
+                    if (receipt) return receipt;
+                } catch (receiptError) {
+                    console.warn('Receipt lookup failed, retrying...', receiptError);
+                }
+
+                await sleep(pollMs);
+            }
+
+            throw new Error(`TX_CONFIRMATION_TIMEOUT: ${txHash}`);
+        };
+
+        const hasEnoughAllowance = async (owner, amount) => {
+            const rpcProvider = getBaseRpcProvider();
+            const readOnlyUsdc = new ethers.Contract(USDC_ADDR, USDC_ABI, rpcProvider);
+            const currentAllowance = await readOnlyUsdc.allowance(owner, STAKING_ADDR);
+            return currentAllowance >= amount;
+        };
+
+        const sendWalletTransaction = async ({ from, to, data }) => {
+            const txHash = await window.ethereum.request({
+                method: 'eth_sendTransaction',
+                params: [{ from, to, data }],
+            });
+
+            if (!txHash) {
+                throw new Error('TX_HASH_MISSING');
+            }
+
+            return txHash;
+        };
+
         const performStake = async () => {
             if (typeof window.ethereum === 'undefined') {
                 alert('ERR: METAMASK_NOT_DETECTED');
@@ -284,23 +342,46 @@
 
                 const provider = new ethers.BrowserProvider(window.ethereum);
                 const signer = await provider.getSigner();
+                const userAddress = await signer.getAddress();
 
                 // 1. Approve USDC
-                status.textContent = 'TRANSACTION_AWAITING: USDC_APPROVAL...';
-                const usdcContract = new ethers.Contract(USDC_ADDR, USDC_ABI, signer);
-                const approveTx = await usdcContract.approve(STAKING_ADDR, finalStakingUnits);
-                progress.style.width = '30%';
-                status.textContent = 'TX_PENDING: AWAITING_APPROVAL_CONFIRMATION...';
-                await approveTx.wait();
+                const alreadyApproved = await hasEnoughAllowance(userAddress, finalStakingUnits);
+
+                if (!alreadyApproved) {
+                    status.textContent = 'TRANSACTION_AWAITING: USDC_APPROVAL...';
+                    const approveData = usdcInterface.encodeFunctionData('approve', [STAKING_ADDR, finalStakingUnits]);
+                    const approveHash = await sendWalletTransaction({
+                        from: userAddress,
+                        to: USDC_ADDR,
+                        data: approveData,
+                    });
+
+                    progress.style.width = '30%';
+                    status.textContent = 'TX_PENDING: AWAITING_APPROVAL_CONFIRMATION...';
+                    const approveReceipt = await waitForReceiptWithRpc(approveHash);
+                    if (approveReceipt.status !== 1) {
+                        throw new Error('USDC_APPROVAL_FAILED');
+                    }
+                } else {
+                    progress.style.width = '45%';
+                    status.textContent = 'USDC_ALLOWANCE_DETECTED: SKIPPING_APPROVAL...';
+                }
 
                 // 2. Deposit/Stake
                 progress.style.width = '60%';
                 status.textContent = 'TRANSACTION_AWAITING: STAKING_DEPOSIT...';
-                const stakingContract = new ethers.Contract(STAKING_ADDR, STAKING_ABI, signer);
-                const depositTx = await stakingContract.deposit(finalStakingUnits);
+                const depositData = stakingInterface.encodeFunctionData('deposit', [finalStakingUnits]);
+                const depositHash = await sendWalletTransaction({
+                    from: userAddress,
+                    to: STAKING_ADDR,
+                    data: depositData,
+                });
                 progress.style.width = '80%';
                 status.textContent = 'TX_PENDING: AWAITING_DEPOSIT_CONFIRMATION...';
-                await depositTx.wait();
+                const depositReceipt = await waitForReceiptWithRpc(depositHash);
+                if (depositReceipt.status !== 1) {
+                    throw new Error('STAKING_DEPOSIT_FAILED');
+                }
 
                 progress.style.width = '100%';
                 status.innerHTML = '<span style="color: #fff;">STAKE_SUCCESS! ON-CHAIN TRANSACTION CONFIRMED.</span>';
